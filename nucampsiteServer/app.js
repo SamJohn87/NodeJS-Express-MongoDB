@@ -5,6 +5,8 @@ const path = require('path');
 const logger = require('morgan');
 const session = require('express-session');
 const FileStore = require('session-file-store')(session);
+const passport = require('passport');
+const authenticate = require('./authenticate')
 
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
@@ -41,22 +43,21 @@ app.use(session({
   saveUninitialized: false, //when new session create with no update, session will not be saved. Prevent empty sessions
   resave: false, //keep session active by avoiding session deletion
   store: new FileStore //create new object to save session information to the server's hard disk instead of application memory
-}))
+}));
+
+//for session based authentification
+//check incoming requests to check existing session from client and load session session if exists
+app.use(passport.initialize());
+app.use(passport.session());
 
 function auth(req, res, next) {
-  console.log(req.session);
-  if (!req.session.user) {
+  console.log(req);
+  if (!req.user) { //no session loaded
     const err = new Error('You are not authenticated!');
     err.status = 401;
     return next(err);
   } else { //session exist
-    if (req.session.user === 'authenticated') {
-      return next(); //go to next middleware function
-    } else {
-      const err = new Error('You are not authenticated!');
-      err.status = 401;
-      return next(err);
-    }
+    return next(); //go to next middleware function
   }
 }
 
