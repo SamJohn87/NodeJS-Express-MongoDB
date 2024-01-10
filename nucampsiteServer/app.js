@@ -12,15 +12,15 @@ const partnerRouter = require('./routes/partnerRouter');
 
 const mangoose = require('mongoose');
 const mongoose = require('mongoose');
-const url= 'mongodb://localhost:27017/nucampsite';
+const url = 'mongodb://localhost:27017/nucampsite';
 const connect = mongoose.connect(url, {
-  useCreateIndex:true,
-  useFindAndModify:false,
-  useNewUrlParser:true,
+  useCreateIndex: true,
+  useFindAndModify: false,
+  useNewUrlParser: true,
   useUnifiedTopology: true
 });
 
-connect.then(()=> console.log('Connected correctly to server'), err => console.log(err));
+connect.then(() => console.log('Connected correctly to server'), err => console.log(err));
 
 const app = express();
 
@@ -31,30 +31,40 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(cookieParser('12345-67890-09876-54321'));
 
 function auth(req, res, next) {
-  console.log(req.headers);
-  const authHeader = req.headers.authorization;
-  if(!authHeader) {
-    const err = new Error('You are not authenticated!');
-    res.setHeader('WWW-Authenticate', 'Basic');
-    err.status = 401;
-    return next(err);
-  }
+  if (!req.signedCookies.user) { //cookie not signed = user not authenticated
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      const err = new Error('You are not authenticated!');
+      res.setHeader('WWW-Authenticate', 'Basic');
+      err.status = 401;
+      return next(err);
+    }
 
-  const auth = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
-  const [user, pass] = auth;
-  if(user === 'admin' && pass === 'password') {
-    return next(); //authorized
-  } else {
-    const err = new Error ('You are not authenticated!');
-    res.setHeader('WWW-Authenticate', 'Basic');
-    err.status = 401;
-    return next(err);
+    const auth = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
+    const [user, pass] = auth;
+    if (user === 'admin' && pass === 'password') {
+      //create new cookie, express will use secret key from cookie parser to create a signed cookie
+      res.cookie('user', 'admin', { signed: true });
+      return next(); //authorized
+    } else {
+      const err = new Error('You are not authenticated!');
+      res.setHeader('WWW-Authenticate', 'Basic');
+      err.status = 401;
+      return next(err);
+    }
+  } else { //signed cookie exist
+    if (req.signedCookies.user === 'admin') {
+      return next(); //go to next middleware function
+    } else {
+      const err = new Error('You are not authenticated!');
+      err.status = 401;
+      return next(err);
+    }
   }
 }
-
 app.use(auth);
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -65,12 +75,12 @@ app.use('/promotions', promotionRouter);
 app.use('/partners', partnerRouter);
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   next(createError(404));
 });
 
 // error handler
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
