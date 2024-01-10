@@ -1,8 +1,10 @@
 const createError = require('http-errors');
 const express = require('express');
 const path = require('path');
-const cookieParser = require('cookie-parser');
+//const cookieParser = require('cookie-parser');
 const logger = require('morgan');
+const session = require('express-session');
+const FileStore = require('session-file-store')(session);
 
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
@@ -10,7 +12,6 @@ const campsiteRouter = require('./routes/campsiteRouter');
 const promotionRouter = require('./routes/promotionRouter');
 const partnerRouter = require('./routes/partnerRouter');
 
-const mangoose = require('mongoose');
 const mongoose = require('mongoose');
 const url = 'mongodb://localhost:27017/nucampsite';
 const connect = mongoose.connect(url, {
@@ -31,10 +32,20 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser('12345-67890-09876-54321'));
+//app.use(cookieParser('12345-67890-09876-54321'));
+
+//session configuration
+app.use(session({
+  name: 'session-id',
+  secret: '12345-67890-09876-54321',
+  saveUninitialized: false, //when new session create with no update, session will not be saved. Prevent empty sessions
+  resave: false, //keep session active by avoiding session deletion
+  store: new FileStore //create new object to save session information to the server's hard disk instead of application memory
+}))
 
 function auth(req, res, next) {
-  if (!req.signedCookies.user) { //cookie not signed = user not authenticated
+  console.log(req.session);
+  if (!req.session.user) { 
     const authHeader = req.headers.authorization;
     if (!authHeader) {
       const err = new Error('You are not authenticated!');
@@ -46,8 +57,7 @@ function auth(req, res, next) {
     const auth = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
     const [user, pass] = auth;
     if (user === 'admin' && pass === 'password') {
-      //create new cookie, express will use secret key from cookie parser to create a signed cookie
-      res.cookie('user', 'admin', { signed: true });
+      req.session.user = 'admin'; //saving to session that username is admin
       return next(); //authorized
     } else {
       const err = new Error('You are not authenticated!');
@@ -55,8 +65,8 @@ function auth(req, res, next) {
       err.status = 401;
       return next(err);
     }
-  } else { //signed cookie exist
-    if (req.signedCookies.user === 'admin') {
+  } else { //session exist
+    if (req.session.user === 'admin') {
       return next(); //go to next middleware function
     } else {
       const err = new Error('You are not authenticated!');
