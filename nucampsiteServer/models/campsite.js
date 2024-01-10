@@ -25,9 +25,10 @@ const commentSchema = new Schema({
 });
 
 const campsiteSchema = new Schema({
-    name: { type: String,
-    required: true,
-    unique: true
+    name: {
+        type: String,
+        required: true,
+        unique: true
     },
     description: {
         type: String,
@@ -41,10 +42,10 @@ const campsiteSchema = new Schema({
         type: Number,
         required: true
     },
-    cost:{
+    cost: {
         type: Currency,
-        required:true,
-        min:0
+        required: true,
+        min: 0
     },
     featured: {
         type: Boolean,
