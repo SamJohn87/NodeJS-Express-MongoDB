@@ -1,11 +1,15 @@
 const express = require('express');
 const Partner = require('../models/partner');
 const authenticate = require('../authenticate');
+const cors = require('./cors');
 
 const partnerRouter = express.Router();
 
 partnerRouter.route('/')
-    .get((req, res, next) => { //get all partners - open to all
+    .options(cors.corsWithOptions, (req, res) => {
+        res.sendStatus(200)
+    })
+    .get(cors.cors, (req, res, next) => { //get all partners - open to all
         Partner.find()
             .then(partners => {
                 res.statusCode = 200;
@@ -14,7 +18,7 @@ partnerRouter.route('/')
             })
             .catch(err => next(err));
     })
-    .post(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => { //add partner - admin user only
+    .post(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => { //add partner - admin user only
         Partner.create(req.body)
             .then(partner => {
                 console.log('Partner Created: ', partner);
@@ -24,11 +28,11 @@ partnerRouter.route('/')
             })
             .catch(err => next(err));
     })
-    .put((req, res) => {
+    .put(cors.corsWithOptions, (req, res) => {
         res.statusCode = 403;
         res.end('PUT operation not supported on /partners');
     })
-    .delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => { //delete all partners - admin user only
+    .delete(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => { //delete all partners - admin user only
         Partner.deleteMany()
             .then(response => {
                 res.statusCode = 200;
@@ -40,7 +44,10 @@ partnerRouter.route('/')
     });
 
 partnerRouter.route('/:partnerId')
-    .get((req, res, next) => { //get specific partner - open to all
+    .options(cors.corsWithOptions, (req, res) => {
+        res.sendStatus(200)
+    })
+    .get(cors.cors, (req, res, next) => { //get specific partner - open to all
         Partner.findById(req.params.partnerId)
             .then(partner => {
                 res.statusCode = 200;
@@ -49,11 +56,11 @@ partnerRouter.route('/:partnerId')
             })
             .catch(err => next(err));
     })
-    .post((req, res) => {
+    .post(cors.corsWithOptions, (req, res) => {
         res.statusCode = 403;
         res.end(`POST operation not supported on /partners/${req.params.partnerId}`);
     })
-    .put(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => { //update partner - admin user only
+    .put(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => { //update partner - admin user only
         Partner.findByIdAndUpdate(req.params.partnerId, { $set: req.body }, { new: true })
             .then(partner => {
                 res.statusCode = 200;
@@ -62,7 +69,7 @@ partnerRouter.route('/:partnerId')
             })
             .catch(err => next(err));
     })
-    .delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => { //delete partner - admin user only
+    .delete(cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => { //delete partner - admin user only
         Partner.findByIdAndDelete(req.params.partnerId)
             .then(response => {
                 res.statusCode = 200;

@@ -2,15 +2,22 @@ const express = require('express');
 const User = require('../models/user');
 const passport = require('passport');
 const authenticate = require('../authenticate');
+const cors = require('./cors');
 
 const router = express.Router();
 
 /* GET users listing. */
-router.get('/', authenticate.verifyUser, authenticate.verifyAdmin, (req, res) => {
-  res.send('respond with a resource');
+router.get('/', cors.corsWithOptions, authenticate.verifyUser, authenticate.verifyAdmin, (req, res) => {
+  User.find()
+    .then(users => {
+      res.statusCode = 200;
+      res.setHeader('Content-type', 'application/json');
+      res.json(users);
+    })
+    .catch(err => next(err));
 });
 
-router.post('/signup', (req, res) => {
+router.post('/signup', cors.corsWithOptions, (req, res) => {
   User.register(
     new User({ username: req.body.username }),
     req.body.password,
@@ -44,7 +51,7 @@ router.post('/signup', (req, res) => {
   );
 });
 
-router.post('/login', passport.authenticate('local'), (req, res) => { //using local strategy to authenticate user
+router.post('/login', cors.corsWithOptions, passport.authenticate('local'), (req, res) => { //using local strategy to authenticate user
   //response if login is successfull - passport handles errors
   //issue token to user
   const token = authenticate.getToken({ _id: req.user._id });
@@ -53,7 +60,7 @@ router.post('/login', passport.authenticate('local'), (req, res) => { //using lo
   res.json({ success: true, token: token, status: 'You are successfully logged in!' }); //add token in response to client
 });
 
-router.get('/logout', (req, res, next) => {
+router.get('/logout', cors.corsWithOptions, (req, res, next) => {
   if (req.session) { //check if session exists
     req.session.destroy(); //deleting session file on server side
     res.clearCookie('session-id'); //clear cookie stored on the client
