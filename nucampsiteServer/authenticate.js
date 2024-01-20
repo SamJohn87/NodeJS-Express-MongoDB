@@ -4,6 +4,7 @@ const User = require('./models/user'); //user schema has access to the passport 
 const JwtStrategy = require('passport-jwt').Strategy;
 const ExtractJwt = require('passport-jwt').ExtractJwt; //extract JW Token from request object
 const jwt = require('jsonwebtoken'); //node module used to create, sign and verify tokens
+const FacebookTokenStrategy = require('passport-facebook-token'); //Facebook strategy
 
 const config = require('./config.js');
 
@@ -51,3 +52,35 @@ exports.verifyAdmin = (req, res, next) => {
         return next(err);
     }
 };
+
+exports.facebookPassport = passport.use(
+    new FacebookTokenStrategy(
+        {
+            clientID: config.facebook.clientId,
+            clientSecret: config.facebook.clientSecret
+        }, 
+        (accessToken, refreshToken, profile, done) => {
+            User.findOne({facebookId: profile.id}, (err, user) => {
+                if (err) {
+                    return done(err, false);
+                }
+                if (!err && user) {
+                    return done(null, user);
+                } else {
+                    console.log('New user created from Facebook login!!')
+                    user = new User({ username: profile.displayName });
+                    user.facebookId = profile.id;
+                    user.firstname = profile.name.givenName;
+                    user.lastname = profile.name.familyName;
+                    user.save((err, user) => {
+                        if (err) {
+                            return done(err, false);
+                        } else {
+                            return done(null, user);
+                        }
+                    });
+                }
+            });
+        }
+    )
+);
