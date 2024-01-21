@@ -9,7 +9,7 @@ const favoriteRouter = express.Router();
 
 favoriteRouter.route('/')
     .options(cors.corsWithOptions, (req, res) => {
-        res.sendStatus(200)
+        res.sendStatus(200);
     })
     .get(cors.cors, authenticate.verifyUser, (req, res, next) => { //get document listing the user's favorites campsites - user needs to be authenticated
         Favorite.find({ user: req.user._id })
@@ -35,7 +35,7 @@ favoriteRouter.route('/')
                         .then(favorite => {
                             res.statusCode = 200;
                             res.setHeader('Content-Type', 'application/json');
-                            res.json(favorite)
+                            res.json(favorite);
                         })
                         .catch(err => next(err));
                 } else { //create document
@@ -71,7 +71,7 @@ favoriteRouter.route('/')
 
 favoriteRouter.route('/:campsiteId') // - User needs to be authenticated
     .options(cors.corsWithOptions, (req, res) => {
-        res.sendStatus(200)
+        res.sendStatus(200);
     })
     .get(cors.cors, authenticate.verifyUser, (req, res) => {
         res.statusCode = 403;
@@ -80,8 +80,7 @@ favoriteRouter.route('/:campsiteId') // - User needs to be authenticated
     .post(cors.corsWithOptions, authenticate.verifyUser, (req, res, next) => {
         //BONUS CHALLENGE - check if it is a valid campsiteId
         Campsite.findOne({ _id: req.params.campsiteId })
-            .then((campsite => {
-                //if (campsite) { //valid campsiteId
+            .then(() => {
                 Favorite.findOne({ user: req.user._id })
                     .then(favorite => {
                         if (favorite) { //favorite document found
@@ -110,7 +109,7 @@ favoriteRouter.route('/:campsiteId') // - User needs to be authenticated
                         }
                     })
                     .catch(err => next(err));
-            }))
+            })
             .catch(err => { //BONUS CHALLENGE - check if it is a valid campsiteId
                 if (err instanceof mongoose.CastError) {
                     // Handle the CastError (invalid ObjectId)
@@ -119,9 +118,8 @@ favoriteRouter.route('/:campsiteId') // - User needs to be authenticated
                 }
                 next(err);
             });
-
     })
-    .put(cors.corsWithOptions, authenticate.verifyUser, (req, res, next) => {
+    .put(cors.corsWithOptions, authenticate.verifyUser, (req, res) => {
         res.statusCode = 403;
         res.end(`PUT operation not supported on /favorites/${req.params.campsiteId}`);
     })
@@ -137,7 +135,7 @@ favoriteRouter.route('/:campsiteId') // - User needs to be authenticated
                             //delete document if no favorites left
                             if (favorite.campsites.length === 0) {
                                 Favorite.findOneAndDelete({ _id: req.user._id })
-                                    .then(response => {
+                                    .then(() => {
                                         res.statusCode = 200;
                                         res.setHeader('Content-Type', 'text/plain');
                                         res.end('There are no favorites to delete!');
@@ -160,4 +158,3 @@ favoriteRouter.route('/:campsiteId') // - User needs to be authenticated
     });
 
 module.exports = favoriteRouter;
-
