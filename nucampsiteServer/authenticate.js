@@ -67,7 +67,8 @@ exports.facebookPassport = passport.use(
                 if (!err && user) {
                     return done(null, user);
                 } else {
-                    console.log('New user created from Facebook login!!')
+                    console.log('Profile information');
+                    console.log(profile);
                     user = new User({ username: profile.displayName });
                     user.facebookId = profile.id;
                     user.firstname = profile.name.givenName;
